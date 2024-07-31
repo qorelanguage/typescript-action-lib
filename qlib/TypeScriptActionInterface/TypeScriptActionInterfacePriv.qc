@@ -22,9 +22,9 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#! Main namespace for the TypeScriptActionInterface module
+#! Private namespace for the TypeScriptActionInterface module
 namespace TypeScriptActionInterfacePriv {
-#! Interface class
+#! Internal interface class
 class TypeScriptActionInterfacePriv {
     static init() {
 

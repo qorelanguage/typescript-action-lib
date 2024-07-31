@@ -23,14 +23,27 @@
 */
 
 #! Main namespace for the TypeScriptActionInterface module
-namespace TypeScriptActionInterfacePriv {
+public namespace TypeScriptActionInterface {
 #! Interface class
-class TypeScriptActionInterface {
+public class TypeScriptActionInterface {
+    public {
+        static hash<string, code> Api = TypeScriptActionInterface::getInterface();
+    }
+
+    static registerApp(JavaScriptObject app) {
+        TypeScriptActionInterface::registerApp(app.toHash());
+    }
+
     static registerApp(hash<auto> app) {
+        hash<auto> app0 += app;
         if (app.logo) {
-            app.logo = parse_base64_string(app.logo);
+            app0.logo = parse_base64_string(app.logo);
         }
-        DataProviderActionCatalog::registerApp(cast<hash<DataProviderAppInfo>>(app));
+        DataProviderActionCatalog::registerApp(cast<hash<DataProviderAppInfo>>(app0));
+    }
+
+    static registerAction(JavaScriptObject action) {
+        TypeScriptActionInterface::registerAction(action.toHash());
     }
 
     static registerAction(hash<auto> action) {
@@ -43,7 +56,14 @@ class TypeScriptActionInterface {
         if (action.output_type) {
             action.output_type = TypeScriptActionInterface::getType(action.output_type);
         }
+        action.path = TypeScriptActionInterface::generateDataProvider(action);
         DataProviderActionCatalog::registerAction(cast<hash<DataProviderActionInfo>>(action));
+    }
+
+    #! Returns the path to the data provider
+    static string generateDataProvider(hash<auto> action) {
+        # TODO
+        return "/";
     }
 
     static hash<string, hash<ActionOptionInfo>> getOptions(hash<auto> opts) {
@@ -77,6 +97,14 @@ class TypeScriptActionInterface {
     static hash<auto> getField(hash<auto> h) {
         h.type = TypeScriptActionInterface::getType(h.type);
         return h;
+    }
+
+    #! Returns a hash that can be used to access these methods in JavaScript
+    static hash<string, code> getInterface() {
+        return {
+            "registerApp": \TypeScriptActionInterface::registerApp(),
+            "registerAction": \TypeScriptActionInterface::registerAction(),
+        };
     }
 }
 }
