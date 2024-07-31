@@ -36,6 +36,7 @@ public class TypeScriptActionInterfaceTest inherits QUnit::Test {
         hash<DataProviderAppInfo> appinfo = DataProviderActionCatalog::getAppEx(name);
         assertEq(name, appinfo.name);
 
+        JavaScriptProgram js("", "");
         hash<auto> action = {
             "app": name,
             "action": "test-api",
@@ -43,6 +44,7 @@ public class TypeScriptActionInterfaceTest inherits QUnit::Test {
             "short_desc": "Test API",
             "desc": "Test API",
             "action_code": DPAT_API,
+            "api_function": new JavaScriptObject(js),
         };
         TypeScriptActionInterface::registerAction(action);
         hash<DataProviderActionInfo> actioninfo = DataProviderActionCatalog::getAppActionEx(name, "test-api");

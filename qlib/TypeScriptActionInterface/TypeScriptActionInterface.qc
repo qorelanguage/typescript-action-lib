@@ -28,10 +28,17 @@ public namespace TypeScriptActionInterface {
 public class TypeScriptActionInterface {
     public {
         static hash<string, code> Api = TypeScriptActionInterface::getInterface();
+
+        static TypeScriptActionRootDataProvider root();
+
+        const TypeKeys = (
+            "name", "display_name", "short_desc", "desc", "type", "example_value",
+            "default_value", "allowed_values", "attr"
+        );
     }
 
     static registerApp(JavaScriptObject app) {
-        TypeScriptActionInterface::registerApp(app.toHash());
+        TypeScriptActionInterface::registerApp(app.toData());
     }
 
     static registerApp(hash<auto> app) {
@@ -43,27 +50,68 @@ public class TypeScriptActionInterface {
     }
 
     static registerAction(JavaScriptObject action) {
-        TypeScriptActionInterface::registerAction(action.toHash());
+        TypeScriptActionInterface::registerAction(action.toData());
     }
 
     static registerAction(hash<auto> action) {
-        if (action.convenience_options) {
-            action.convenience_options = TypeScriptActionInterface::getOptions(action.convenience_options);
-        }
-        if (action.advanced_options) {
-            action.advanced_options = TypeScriptActionInterface::getOptions(action.advanced_options);
-        }
-        if (action.output_type) {
-            action.output_type = TypeScriptActionInterface::getType(action.output_type);
-        }
-        action.path = TypeScriptActionInterface::generateDataProvider(action);
+        action.path = TypeScriptActionInterface::generateDataProvider(\action);
         DataProviderActionCatalog::registerAction(cast<hash<DataProviderActionInfo>>(action));
     }
 
     #! Returns the path to the data provider
-    static string generateDataProvider(hash<auto> action) {
-        # TODO
+    static string generateDataProvider(reference<hash<auto>> action) {
+        string path;
+        switch (action.action_code) {
+            case DPAT_API: {
+                path = TypeScriptActionInterface::generateApiDataProvider(\action);
+                break;
+            }
+
+            default:
+                throw "TYPESCRIPT-ACTION-ERROR", sprintf("App %y action %y action_code: %y is unsupported",
+                    action.app, action.action, action.action_code);
+        }
         return "/";
+    }
+
+    static string generateApiDataProvider(reference<hash<auto>> action) {
+        auto api_function = remove action.api_function;
+        if (!(api_function instanceof JavaScriptObject)) {
+            throw "TYPESCRIPT-ACTION-ERROR", sprintf("App %y action %y has an invalid \"api_function\" "
+                "attribute; got type %y; expecting \"JavaScriptObject\"", action.app, action.action,
+                api_function.fullType());
+        }
+
+        *AbstractDataProviderType request_type;
+        if (action.options) {
+            action.options = action.options.toData(True);
+
+            request_type = TypeScriptActionInterface::getType(map {$1.key: $1.value{TypeKeys}},
+                action.options.pairIterator());
+            action.convenience_options = TypeScriptActionInterface::getOptions(remove action.options);
+        }
+        *AbstractDataProviderType response_type;
+        if (action.response_type) {
+            action.response_type = action.response_type.toData(True);
+            response_type = TypeScriptActionInterface::getType(remove action.response_type);
+            action.output_type = response_type;
+        }
+
+        TypeScriptActionAppDataProvider prov = TypeScriptActionInterface::getAppDataProvider(action.app,
+            action.action);
+
+        prov.registerChild(action.action, new TypeScriptActionApiDataProvider(action.action, api_function,
+            request_type, response_type));
+
+        # return path to data provider
+        return sprintf("%s/%s/%s", TypeScriptActionRootDataProvider::Root, action.app, action.action);
+    }
+
+    static TypeScriptActionAppDataProvider getAppDataProvider(string app, string action) {
+        if (*AbstractDataProvider app_prov = root.getChildProvider(app)) {
+            return app_prov;
+        }
+        return new TypeScriptActionAppDataProvider(app);
     }
 
     static hash<string, hash<ActionOptionInfo>> getOptions(hash<auto> opts) {
@@ -84,8 +132,9 @@ public class TypeScriptActionInterface {
     }
 
     static AbstractDataProviderType getType(hash<auto> h) {
+        on_error rethrow $1.err, sprintf("%s (type: %y)", $1.desc, h);
         HashDataType type();
-        type.addQoreFields(map {$1.key: TypeScriptActionInterface::getField($1.key, $1.value)}, h.pairIterator());
+        type.addQoreFields(map {$1.key: TypeScriptActionInterface::getField($1.value)}, h.pairIterator());
         return type;
     }
 
@@ -95,6 +144,7 @@ public class TypeScriptActionInterface {
     }
 
     static hash<auto> getField(hash<auto> h) {
+        on_error rethrow $1.err, sprintf("%s (field: %y)", $1.desc, h);
         h.type = TypeScriptActionInterface::getType(h.type);
         return h;
     }
