@@ -41,12 +41,12 @@ class TypeScriptActionApiDataProvider inherits AbstractDataProvider {
 
     private {
         string name;
-        JavaScriptObject api_function;
+        code api_function;
         *AbstractDataProviderType request_type;
         *AbstractDataProviderType response_type;
     }
 
-    constructor(string name, JavaScriptObject api_function, *AbstractDataProviderType request_type,
+    constructor(string name, code api_function, *AbstractDataProviderType request_type,
             *AbstractDataProviderType response_type) {
         self.name = name;
         self.api_function = api_function;
@@ -66,7 +66,7 @@ class TypeScriptActionApiDataProvider inherits AbstractDataProvider {
         @return the response to the request
     */
     private auto doRequestImpl(auto req, *hash<auto> request_options) {
-        return api_function.callAsFunction(NOTHING, req);
+        return api_function(req);
     }
 
     #! Returns the description of a successful request message, if any

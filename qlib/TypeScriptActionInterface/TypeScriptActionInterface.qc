@@ -41,16 +41,16 @@ public class TypeScriptActionInterface {
         TypeScriptActionInterface::registerApp(app.toData());
     }
 
+    static registerAction(JavaScriptObject action) {
+        TypeScriptActionInterface::registerAction(action.toData());
+    }
+
     static registerApp(hash<auto> app) {
         hash<auto> app0 += app;
         if (app.logo) {
             app0.logo = parse_base64_string(app.logo);
         }
         DataProviderActionCatalog::registerApp(cast<hash<DataProviderAppInfo>>(app0));
-    }
-
-    static registerAction(JavaScriptObject action) {
-        TypeScriptActionInterface::registerAction(action.toData());
     }
 
     static registerAction(hash<auto> action) {
@@ -76,15 +76,15 @@ public class TypeScriptActionInterface {
 
     static string generateApiDataProvider(reference<hash<auto>> action) {
         auto api_function = remove action.api_function;
-        if (!(api_function instanceof JavaScriptObject)) {
+        if (!api_function.callp()) {
             throw "TYPESCRIPT-ACTION-ERROR", sprintf("App %y action %y has an invalid \"api_function\" "
-                "attribute; got type %y; expecting \"JavaScriptObject\"", action.app, action.action,
+                "attribute; got type %y; expecting a callable value", action.app, action.action,
                 api_function.fullType());
         }
 
         *AbstractDataProviderType request_type;
         if (action.options) {
-            action.options = action.options.toData(True);
+            action.options = action.options;
 
             request_type = TypeScriptActionInterface::getType(map {$1.key: $1.value{TypeKeys}},
                 action.options.pairIterator());
@@ -92,7 +92,7 @@ public class TypeScriptActionInterface {
         }
         *AbstractDataProviderType response_type;
         if (action.response_type) {
-            action.response_type = action.response_type.toData(True);
+            action.response_type = action.response_type;
             response_type = TypeScriptActionInterface::getType(remove action.response_type);
             action.output_type = response_type;
         }
